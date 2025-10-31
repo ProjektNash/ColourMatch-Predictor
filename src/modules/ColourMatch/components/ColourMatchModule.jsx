@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
 import pmsData from "../data/PMSReference_CLEAN.json";
+import LabPlot from "./LabPlot";
+
 
 import { predictFormula } from "../backend/predictionEngine.js";
 
@@ -249,33 +251,87 @@ export default function ColourMatchModule() {
         </div>
 
         {/* Colour comparison */}
-        <div className="col-md-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h5 className="card-title mb-3">Visual Comparison</h5>
-              <div className="d-flex justify-content-around align-items-center">
-                <Patch label="Target" lab={parsedTarget} />
-                {result && <Patch label="Predicted" lab={result.predicted} />}
-              </div>
-              {result && (
-                <div className="mt-3">
-                  <span className="text-muted me-2">ΔE₀₀:</span>
-                  <span
-                    className={
-                      dE00 < 2
-                        ? "text-success fw-bold"
-                        : dE00 < 5
-                        ? "text-warning fw-bold"
-                        : "text-danger fw-bold"
-                    }
-                  >
-                    {dE00.toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
+<div className="col-md-4">
+  <div className="card shadow-sm">
+    <div className="card-body">
+      <h5 className="card-title mb-3">Visual Comparison</h5>
+
+      {/* Colour patches */}
+      <div className="d-flex justify-content-around align-items-center mb-3">
+        <Patch label="Target" lab={parsedTarget} />
+        {result && <Patch label="Predicted" lab={result.predicted} />}
+      </div>
+
+      {/* ΔE display */}
+      {result && (
+        <div className="mb-3">
+          <span className="text-muted me-2">ΔE₀₀:</span>
+          <span
+            className={
+              dE00 < 2
+                ? "text-success fw-bold"
+                : dE00 < 5
+                ? "text-warning fw-bold"
+                : "text-danger fw-bold"
+            }
+          >
+            {dE00.toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* LAB direction & L* comparison */}
+      {result && (
+        <div className="d-flex justify-content-center align-items-start mt-3 gap-3">
+          {/* ab-plane plot */}
+          <LabPlot target={parsedTarget} predicted={result.predicted} />
+
+          {/* L-star vertical scale */}
+          <div
+            style={{
+              width: "20px",
+              height: "200px",
+              background: "linear-gradient(white, black)",
+              borderRadius: "6px",
+              position: "relative",
+            }}
+          >
+            {/* Target L* */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: `${parsedTarget.L}%`,
+                left: 0,
+                width: "100%",
+                height: "2px",
+                backgroundColor: "black",
+              }}
+              title={`Target L*: ${parsedTarget.L}`}
+            ></div>
+
+            {/* Predicted L* */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: `${result.predicted.L}%`,
+                left: 0,
+                width: "100%",
+                height: "2px",
+                backgroundColor: "red",
+              }}
+              title={`Predicted L*: ${result.predicted.L}`}
+            ></div>
           </div>
         </div>
+      )}
+
+      <small className="text-muted d-block mt-3 text-center">
+        a* (→ Red / ← Green) · b* (↑ Yellow / ↓ Blue) · L* (↑ lighter)
+      </small>
+    </div>
+  </div>
+</div>
+
 
         {/* Notes */}
         <div className="col-md-4">

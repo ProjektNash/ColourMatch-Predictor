@@ -1,5 +1,5 @@
-import pmsData from "../data/PMSReference_CLEAN.json" assert { type: "json" };
-import dcDataRaw from "../data/DCInkSystem_CLEAN.json" assert { type: "json" };
+import pmsData from "../data/PMSReference_CLEAN.json" 
+import dcDataRaw from "../data/DCInkSystem_CLEAN.json" 
 
 /* ==========================================
    ΔE00 (CIEDE2000)
