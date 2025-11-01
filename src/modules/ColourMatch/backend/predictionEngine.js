@@ -1,6 +1,15 @@
 import pmsData from "../data/PMSReference_CLEAN.json" 
 import dcDataRaw from "../data/DCInkSystem_CLEAN.json" 
 
+// Helper: get DC ink name by code from DCInkSystem_CLEAN.json
+function getDcName(code) {
+  const row = dcDataRaw.find(
+    (r) => String(r.Ink || "").trim().toUpperCase() === String(code).trim().toUpperCase()
+  );
+  return row && row.Name ? String(row.Name).trim() : "";
+}
+
+
 /* ==========================================
    ΔE00 (CIEDE2000)
    ========================================== */
@@ -314,20 +323,29 @@ function predictUsingDCSystem(targetLAB) {
 
   best.selected.forEach((p, i) => {
     const base = p.baseInk;
-    const pureSharePct = best.weights[i] * pigmentTotal; // this is total tint % allocated to this base
-    // convert from tint % at "conc row" to pure pigment % using ladder info
-    // We assume "Conc %" in raw is percentage of pure in that tint; to translate:
-    // ext added within selected tint is accounted by pigmentTotal already; treat entire pureSharePct as pure pigment.
-    const purePigment = pureSharePct; // already pure share
-    merged.set(base, +( (merged.get(base) || 0) + purePigment ).toFixed(4));
+    const pureSharePct = best.weights[i] * pigmentTotal;
+    const purePigment = pureSharePct;
+    merged.set(base, +((merged.get(base) || 0) + purePigment).toFixed(4));
   });
 
-  // Extender %
+  // Build formula with ink names
   const formula = Array.from(merged.entries())
-    .map(([code, pct]) => ({ code, Percentage: +pct.toFixed(2) }))
+    .map(([code, pct]) => {
+      const match = dcDataRaw.find(
+        (r) => String(r.Ink || "").trim().toUpperCase() === code.toUpperCase()
+      );
+      const name = match && match.Name ? match.Name.trim() : "";
+      const codeDisplay = name ? `${code} ${name}` : code;
+      return { code: codeDisplay, name, Percentage: +pct.toFixed(2) };
+    })
     .filter((x) => x.Percentage >= 0.25);
 
-  formula.push({ code: "DC21-002 Extender", Percentage: +extenderTotal.toFixed(2) });
+  // Add extender (always show with name)
+  formula.push({
+    code: "DC21-002 Extender",
+    name: "Extender",
+    Percentage: +extenderTotal.toFixed(2),
+  });
 
   return {
     formula,
@@ -337,6 +355,7 @@ function predictUsingDCSystem(targetLAB) {
     source: "DC Ink System",
   };
 }
+
 
 /* ==========================================
    Main export with PMS shortcut

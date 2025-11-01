@@ -1,0 +1,1 @@
+mongodb+srv://ProjektNash:TheNash153412!@cluster-projektnash.hc1q6ag.mongodb.net/?appName=Cluster-ProjektNash

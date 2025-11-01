@@ -1,13 +1,9 @@
 import React, { useState, useMemo } from "react";
 import pmsData from "../data/PMSReference_CLEAN.json";
 import LabPlot from "./LabPlot";
-
-
 import { predictFormula } from "../backend/predictionEngine.js";
 
-/* =============================
-   ΔE00 (CIEDE2000)
-   ============================= */
+/* ΔE00 (CIEDE2000) */
 function deltaE00(l1, l2) {
   const { L: L1, a: a1, b: b1 } = l1;
   const { L: L2, a: a2, b: b2 } = l2;
@@ -41,7 +37,7 @@ function deltaE00(l1, l2) {
     0.17 * Math.cos(((avgHp - 30) * Math.PI) / 180) +
     0.24 * Math.cos(((2 * avgHp) * Math.PI) / 180) +
     0.32 * Math.cos(((3 * avgHp + 6) * Math.PI) / 180) -
-    0.20 * Math.cos(((4 * avgHp - 63) * Math.PI) / 180);
+    0.2 * Math.cos(((4 * avgHp - 63) * Math.PI) / 180);
   const SL = 1 + (0.015 * (avgL - 50) ** 2) / Math.sqrt(20 + (avgL - 50) ** 2);
   const SC = 1 + 0.045 * avgCp;
   const SH = 1 + 0.015 * avgCp * T;
@@ -56,9 +52,7 @@ function deltaE00(l1, l2) {
   );
 }
 
-/* =============================
-   Helper (LAB → sRGB)
-   ============================= */
+/* LAB → sRGB helper */
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -93,9 +87,7 @@ function labToSRGB(lab) {
   return `rgb(${R}, ${G}, ${B})`;
 }
 
-/* =============================
-   Subcomponent: Colour Patch
-   ============================= */
+/* Colour Patch */
 function Patch({ label, lab }) {
   const safeL = parseFloat(lab?.L) || 0;
   const safeA = parseFloat(lab?.a) || 0;
@@ -118,9 +110,7 @@ function Patch({ label, lab }) {
   );
 }
 
-/* =============================
-   PMS Shade Lookup Component
-   ============================= */
+/* PMS selector */
 function PmsSelector({ onSelect }) {
   const [query, setQuery] = useState("");
   const filtered = pmsData.filter((p) =>
@@ -175,9 +165,7 @@ function PmsSelector({ onSelect }) {
   );
 }
 
-/* =============================
-   Main ColourMatchModule
-   ============================= */
+/* Main Component */
 export default function ColourMatchModule() {
   const [target, setTarget] = useState({ L: "75", a: "5", b: "65" });
   const [result, setResult] = useState(null);
@@ -216,10 +204,12 @@ export default function ColourMatchModule() {
   return (
     <div className="container py-4">
       <h2 className="fw-bold mb-4">Predicted Colour Match</h2>
-      <div className="row g-4">
-        {/* Target LAB + PMS lookup */}
-        <div className="col-md-4">
-          <div className="card shadow-sm">
+
+      {/* Top Row: Target LAB + Formula */}
+      <div className="row g-4 align-items-stretch">
+        {/* Target LAB */}
+        <div className="col-md-6">
+          <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title mb-3">Target LAB</h5>
               <PmsSelector onSelect={handleSelectPMS} />
@@ -250,166 +240,135 @@ export default function ColourMatchModule() {
           </div>
         </div>
 
-        {/* Colour comparison */}
-<div className="col-md-4">
-  <div className="card shadow-sm">
-    <div className="card-body">
-      <h5 className="card-title mb-3">Visual Comparison</h5>
-
-      {/* Colour patches */}
-      <div className="d-flex justify-content-around align-items-center mb-3">
-        <Patch label="Target" lab={parsedTarget} />
-        {result && <Patch label="Predicted" lab={result.predicted} />}
-      </div>
-
-      {/* ΔE display */}
-      {result && (
-        <div className="mb-3">
-          <span className="text-muted me-2">ΔE₀₀:</span>
-          <span
-            className={
-              dE00 < 2
-                ? "text-success fw-bold"
-                : dE00 < 5
-                ? "text-warning fw-bold"
-                : "text-danger fw-bold"
-            }
-          >
-            {dE00.toFixed(2)}
-          </span>
-        </div>
-      )}
-
-      {/* LAB direction & L* comparison */}
-      {result && (
-        <div className="d-flex justify-content-center align-items-start mt-3 gap-3">
-          {/* ab-plane plot */}
-          <LabPlot target={parsedTarget} predicted={result.predicted} />
-
-          {/* L-star vertical scale */}
-          <div
-            style={{
-              width: "20px",
-              height: "200px",
-              background: "linear-gradient(white, black)",
-              borderRadius: "6px",
-              position: "relative",
-            }}
-          >
-            {/* Target L* */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: `${parsedTarget.L}%`,
-                left: 0,
-                width: "100%",
-                height: "2px",
-                backgroundColor: "black",
-              }}
-              title={`Target L*: ${parsedTarget.L}`}
-            ></div>
-
-            {/* Predicted L* */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: `${result.predicted.L}%`,
-                left: 0,
-                width: "100%",
-                height: "2px",
-                backgroundColor: "red",
-              }}
-              title={`Predicted L*: ${result.predicted.L}`}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      <small className="text-muted d-block mt-3 text-center">
-        a* (→ Red / ← Green) · b* (↑ Yellow / ↓ Blue) · L* (↑ lighter)
-      </small>
-    </div>
-  </div>
-</div>
-
-
-        {/* Notes */}
-        <div className="col-md-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h5 className="card-title mb-3">Notes</h5>
-              <ul className="small text-muted mb-0 ps-3">
-                <li>
-                  Use the PMS lookup to prefill LAB values, then adjust manually.
-                </li>
-                <li>
-                  Uses <code>PMSReference_CLEAN.json</code> and falls back to{" "}
-                  <code>DCInkSystem_CLEAN.json</code> when needed.
-                </li>
-                <li>Displays ΔE₀₀, data source, and formula breakdown.</li>
-              </ul>
+        {/* Predicted Formula */}
+        {result && (
+          <div className="col-md-6">
+            <div className="card shadow-sm h-100">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <div className="d-flex align-items-center gap-2">
+                    <h5 className="card-title mb-0">Predicted Formula</h5>
+                    {result.source && (
+                      <span
+                        className={`badge ${
+                          String(result.source).toLowerCase().includes("pms")
+                            ? "bg-primary"
+                            : "bg-warning text-dark"
+                        }`}
+                      >
+                        {result.source}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="table-responsive">
+                  <table className="table align-middle mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Item Code</th>
+                        <th className="text-end">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.formula.map((row, i) => (
+                        <tr key={i}>
+                          <td className="fw-semibold">{row.code}</td>
+                          <td className="text-end">
+                            {(row.pct || row.Percentage || 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="table-light">
+                        <td>Total</td>
+                        <td className="text-end fw-bold">
+                          {result.formula
+                            .reduce(
+                              (sum, r) => sum + (r.pct || r.Percentage || 0),
+                              0
+                            )
+                            .toFixed(2)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Formula output */}
+      {/* Bottom: Visual Comparison */}
       {result && (
         <div className="card shadow-sm mt-4">
           <div className="card-body">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <div className="d-flex align-items-center gap-2">
-                <h5 className="card-title mb-0">Predicted Formula</h5>
-                {result.source && (
+            <h5 className="card-title mb-3">Visual Comparison</h5>
+
+            <div
+              className="d-flex align-items-center justify-content-center flex-wrap gap-5"
+              style={{ padding: "10px 20px" }}
+            >
+              {/* Left: Target + Predicted + ΔE */}
+              <div className="text-center" style={{ flex: "0 1 auto" }}>
+                <div className="d-flex justify-content-center align-items-start gap-4 mb-2">
+                  <Patch label="Target" lab={parsedTarget} />
+                  <Patch label="Predicted" lab={result.predicted} />
+                </div>
+                <div className="mt-2">
+                  <span className="text-muted me-2">ΔE₀₀:</span>
                   <span
-                    className={`badge ${
-                      String(result.source).toLowerCase().includes("pms")
-                        ? "bg-primary"
-                        : "bg-warning text-dark"
-                    }`}
+                    className={
+                      dE00 < 2
+                        ? "text-success fw-bold"
+                        : dE00 < 5
+                        ? "text-warning fw-bold"
+                        : "text-danger fw-bold"
+                    }
                   >
-                    {result.source}
+                    {dE00.toFixed(2)}
                   </span>
-                )}
+                </div>
               </div>
-              {result.nearestPantone && (
-                <small className="text-muted">
-                  Nearest PMS: <strong>{result.nearestPantone}</strong>
-                </small>
-              )}
-            </div>
-            <div className="table-responsive">
-              <table className="table align-middle mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Item Code</th>
-                    <th className="text-end">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.formula.map((row, i) => (
-                    <tr key={i}>
-                      <td className="fw-semibold">{row.code}</td>
-                      <td className="text-end">
-                        {(row.pct || row.Percentage || 0).toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="table-light">
-                    <td>Total</td>
-                    <td className="text-end fw-bold">
-                      {result.formula
-                        .reduce(
-                          (sum, r) => sum + (r.pct || r.Percentage || 0),
-                          0
-                        )
-                        .toFixed(2)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+
+              {/* Right: LAB Plot + Lightness bar */}
+              <div
+                className="d-flex align-items-center gap-3"
+                style={{ flex: "0 1 auto" }}
+              >
+                <LabPlot target={parsedTarget} predicted={result.predicted} />
+                <div
+                  style={{
+                    width: "20px",
+                    height: "200px",
+                    background: "linear-gradient(white, black)",
+                    borderRadius: "6px",
+                    position: "relative",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: `${parsedTarget.L}%`,
+                      left: 0,
+                      width: "100%",
+                      height: "2px",
+                      backgroundColor: "black",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: `${result.predicted.L}%`,
+                      left: 0,
+                      width: "100%",
+                      height: "2px",
+                      backgroundColor: "red",
+                    }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
