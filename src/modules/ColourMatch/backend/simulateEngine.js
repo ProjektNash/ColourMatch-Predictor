@@ -54,40 +54,77 @@ const STRENGTH_MAP = {
 };
 
 /* -------------------------------------------------
-   Simulate LAB shift after formula edit
+   Simulate LAB shift after formula edit (with extender effect)
 ------------------------------------------------- */
 export function simulateLab(baseLab, newFormula, oldFormula) {
-  let dL = 0,
-    da = 0,
-    db = 0;
+  let dL = 0, da = 0, db = 0;
+  const kBase = 0.5; // global tweak sensitivity
 
-  // global tweak sensitivity
-  const kBase = 0.5; // slightly stronger (was 0.35)
+  // Identify extender rows (anything containing "EXT" etc.)
+  const extenderRow = newFormula.find(
+    (p) => String(p.code || "").toUpperCase().includes("EXT")
+  );
+  const oldExtRow = oldFormula.find(
+    (p) => String(p.code || "").toUpperCase().includes("EXT")
+  );
 
+  const newExt = parseFloat(extenderRow?.pct || extenderRow?.Percentage || 0) || 0;
+  const oldExt = parseFloat(oldExtRow?.pct || oldExtRow?.Percentage || 0) || 0;
+  const diffExt = newExt - oldExt;
+
+  // Base substrate colour (acts as white background)
+  const substrateLab = { L: 95, a: 0, b: 2 };
+
+  /* --------------------------
+     1️⃣ Handle extender first
+  -------------------------- */
+  if (diffExt !== 0) {
+    // positive = added extender → lighten
+    // negative = removed extender → darken
+    const extStrength = STRENGTH_MAP.EXTENDER || 0.4;
+    const factor = (diffExt / 100) * kBase * extStrength;
+
+    dL += (substrateLab.L - baseLab.L) * factor;
+    da += (substrateLab.a - baseLab.a) * factor;
+    db += (substrateLab.b - baseLab.b) * factor;
+
+    console.log(
+      `→ Extender changed ${diffExt.toFixed(2)}% | ΔL=${dL.toFixed(
+        2
+      )}, Δa=${da.toFixed(2)}, Δb=${db.toFixed(2)}`
+    );
+  }
+
+  /* --------------------------
+     2️⃣ Handle pigment changes
+  -------------------------- */
   newFormula.forEach((p) => {
-    const code = String(p.code || "").trim();
+    const code = String(p.code || "").trim().toUpperCase();
+    if (code.includes("EXT")) return; // skip extender (already handled)
+
     const newPct = parseFloat(p.pct || p.Percentage || 0) || 0;
     const oldPct =
-      (oldFormula.find((x) => x.code === code)?.pct ||
-        oldFormula.find((x) => x.code === code)?.Percentage ||
+      (oldFormula.find((x) => x.code?.toUpperCase() === code)?.pct ||
+        oldFormula.find((x) => x.code?.toUpperCase() === code)?.Percentage ||
         0) ?? 0;
+
     const diff = newPct - oldPct;
     if (diff === 0) return;
 
     const ref = getPigmentLAB(code);
     if (!ref) return;
 
-    // find strength weight from pigment family
+    // Determine pigment strength from its family
     const key = Object.keys(STRENGTH_MAP).find((k) =>
       ref.name.toUpperCase().includes(k)
     );
     const kStrength = key ? STRENGTH_MAP[key] : 1.0;
 
-    // estimate pigment chroma magnitude
+    // Boost vivid pigments slightly
     const chroma = Math.sqrt(ref.a ** 2 + ref.b ** 2);
-    const chromaFactor = 1 + chroma / 80; // boosts vivid pigments (reds/blues)
+    const chromaFactor = 1 + chroma / 80;
 
-    // direction factor (scaled by % change, strength, and chroma)
+    // Compute influence factor
     const factor = (diff / 100) * kBase * kStrength * chromaFactor;
 
     // Apply influence — dark colours reduce L, bright lift it
@@ -102,6 +139,9 @@ export function simulateLab(baseLab, newFormula, oldFormula) {
     );
   });
 
+  /* --------------------------
+     3️⃣ Return adjusted LAB
+  -------------------------- */
   return {
     L: +(baseLab.L + dL).toFixed(2),
     a: +(baseLab.a + da).toFixed(2),
