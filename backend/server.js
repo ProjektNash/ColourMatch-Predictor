@@ -10,50 +10,65 @@ import { fileURLToPath, pathToFileURL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- Load environment variables (works even when run from root) ---
-dotenv.config({ path: path.join(__dirname, ".env") });
+// --- Load environment variables ---
+dotenv.config();  // Load environment variables from .env
+
+// Connect to the Assets database (removing the userAuth database connection)
+const assetsConnection = mongoose.createConnection(process.env.ASSETS_MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Debugging to ensure the database is connected
+assetsConnection.once("open", () => {
+  console.log("✅ Connected to Assets database");
+});
+
+// --- Define Models for Assets database ---
+const assetSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: String,
+  cost: Number,
+});
+
+// Define model for the Assets database
+const Asset = assetsConnection.model("Asset", assetSchema);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- CONNECT TO MONGODB ---
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ Connected to MongoDB Atlas");
-    console.log(`📦 Using database: ${mongoose.connection.name}`);
-  })
-  .catch((err) => console.error("❌ MongoDB connection error:", err.message));
-
-// --- AUTO-LOAD ALL ROUTES (Windows-safe dynamic import) ---
-const routesDir = path.join(__dirname, "routes");
-
-if (fs.existsSync(routesDir)) {
-  const routeFiles = fs.readdirSync(routesDir).filter((file) => file.endsWith(".js"));
-
-  if (routeFiles.length === 0) {
-    console.log("⚠️ No route files found in /routes");
-  }
-
-  for (const file of routeFiles) {
-    const routePath = pathToFileURL(path.join(routesDir, file)).href;
-    try {
-      const routeModule = await import(routePath);
-      const routeName = file.replace(/Routes\.js$/, "").toLowerCase();
-      app.use(`/api/${routeName}`, routeModule.default);
-      console.log(`🔗 Loaded route: /api/${routeName}`);
-    } catch (err) {
-      console.error(`❌ Error loading route ${file}:`, err.message);
-    }
-  }
-} else {
-  console.warn("⚠️ Routes directory not found — skipping route loading.");
-}
-
 // --- TEST ROUTE ---
 app.get("/", (req, res) => {
-  res.send("Asset Backend API Running");
+  res.send("Backend API Running");
+});
+
+// --- Example Route for Assets ---
+app.get("/assets", async (req, res) => {
+  try {
+    const assets = await Asset.find(); // Fetch all assets from the database
+    res.status(200).json(assets);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching assets", error: err.message });
+  }
+});
+
+// --- ADD NEW ASSET ---
+app.post("/assets", async (req, res) => {
+  const { name, description, cost } = req.body;
+
+  const newAsset = new Asset({
+    name,
+    description,
+    cost,
+  });
+
+  try {
+    await newAsset.save();
+    res.status(201).json({ message: "Asset added successfully", asset: newAsset });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding asset", error: err.message });
+  }
 });
 
 // --- START SERVER ---

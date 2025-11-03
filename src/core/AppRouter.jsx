@@ -1,4 +1,3 @@
-// src/core/AppRouter.jsx
 import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -13,7 +12,6 @@ import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
 
 // Modules
-import Assets from "../modules/Assets/Assets";
 import ColourMatch from "../modules/ColourMatch/pages/ColourMatch.jsx"; // ✅ added import
 
 // Dashboard placeholder
@@ -55,6 +53,7 @@ export default function AppRouter() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {/* Removed Register route */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
@@ -76,10 +75,7 @@ export default function AppRouter() {
               {/* Dashboard */}
               <Route path="/" element={<Dashboard />} />
 
-              {/* Assets Module */}
-              <Route path="/assets" element={<Assets />} />
-
-              {/* ✅ Colour Match Module */}
+              {/* Colour Match Module */}
               <Route path="/colourmatch" element={<ColourMatch />} />
 
               {/* Fallback route */}

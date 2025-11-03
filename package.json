@@ -5,9 +5,7 @@
   "type": "module",
   "homepage": "https://projektnash.github.io/ColourMatch-Predictor",
   "scripts": {
-    "dev": "concurrently \"cd backend && npm run dev\" \"vite\"",
-    "server": "cd backend && npm run dev",
-    "client": "vite",
+    "dev": "vite",
     "build": "vite build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint .",
@@ -15,10 +13,11 @@
   },
   "dependencies": {
     "axios": "^1.13.1",
+    "bcryptjs": "^3.0.2",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.2",
     "nanoid": "^5.1.6",
@@ -27,7 +26,8 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.5",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "wrap-ansi": "^9.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -42,7 +42,7 @@
     "globals": "^16.4.0",
     "vite": "^7.1.7"
   },
-  "description": "ProjektNash unified frontend + backend setup using Vite and Express.",
+  "description": "ProjektNash ColourMatch system module with frontend setup using Vite and React.",
   "main": "eslint.config.js",
   "repository": {
     "type": "git",

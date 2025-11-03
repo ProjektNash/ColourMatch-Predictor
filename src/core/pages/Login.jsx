@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
@@ -10,19 +11,34 @@ export default function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Simple hardcoded login check
-    if (form.username === "admin" && form.password === "admin123") {
-      // ✅ Save login flag and username for Navbar
+    // Log the form data before sending it
+    console.log("Form data being sent:", form);
+
+    try {
+      // Send login request to backend
+      const response = await axios.post("http://localhost:5000/login", form);
+
+      // Store the JWT token and username if login is successful
       localStorage.setItem("pn_loggedIn", "true");
       localStorage.setItem("pn_user", form.username);
+      localStorage.setItem("pn_token", response.data.token); // Store JWT token
 
       setError("");
       navigate("/", { replace: true }); // Redirect to dashboard
-    } else {
-      setError("Invalid credentials");
+    } catch (err) {
+      // Log the full error response for debugging
+      console.error("Login error:", err);
+
+      // Show user-friendly error message
+      if (err.response) {
+        console.error("Error response data:", err.response.data);
+        setError(err.response.data.message || "Invalid credentials");
+      } else {
+        setError("Network error or server issue. Please try again later.");
+      }
     }
   };
 
@@ -36,9 +52,7 @@ export default function Login() {
         style={{ width: "100%", maxWidth: "400px" }}
       >
         <h4 className="text-center mb-3 text-info fw-bold">ProjektNash-Core</h4>
-        <p className="text-center text-secondary mb-4">
-          Sign in to continue
-        </p>
+        <p className="text-center text-secondary mb-4">Sign in to continue</p>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">

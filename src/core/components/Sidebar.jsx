@@ -7,7 +7,6 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: "Dashboard", path: "/" },
-    { name: "Assets", path: "/assets" },
     { name: "Colour Match", path: "/colourmatch" }, // ✅ new menu item
   ];
 
