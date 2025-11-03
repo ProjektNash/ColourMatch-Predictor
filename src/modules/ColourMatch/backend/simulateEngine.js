@@ -62,7 +62,7 @@ export function simulateLab(baseLab, newFormula, oldFormula) {
     db = 0;
 
   // global tweak sensitivity
-  const kBase = 1; // slightly stronger (was 0.35)
+  const kBase = 0.5; // slightly stronger (was 0.35)
 
   newFormula.forEach((p) => {
     const code = String(p.code || "").trim();
